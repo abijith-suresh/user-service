@@ -2,8 +2,12 @@ package sh.abijith.userservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import sh.abijith.userservice.dto.PagedUserResponse;
 import sh.abijith.userservice.dto.UpdateUserRequest;
 import sh.abijith.userservice.dto.UserProfileRequest;
 import sh.abijith.userservice.dto.UserProfileResponse;
@@ -44,6 +48,16 @@ public class UserController {
     public ResponseEntity<Void> reactivateUser(@PathVariable String id) {
         userService.reactivateUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedUserResponse> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "email") String sortBy
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).ascending());
+        return ResponseEntity.ok(userService.getUsers(pageable));
     }
 
     @PostMapping

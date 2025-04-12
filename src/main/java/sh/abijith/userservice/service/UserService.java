@@ -1,7 +1,10 @@
 package sh.abijith.userservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import sh.abijith.userservice.dto.PagedUserResponse;
 import sh.abijith.userservice.dto.UpdateUserRequest;
 import sh.abijith.userservice.dto.UserProfileRequest;
 import sh.abijith.userservice.dto.UserProfileResponse;
@@ -9,6 +12,8 @@ import sh.abijith.userservice.exception.UserAlreadyExistsException;
 import sh.abijith.userservice.exception.UserNotFoundException;
 import sh.abijith.userservice.model.User;
 import sh.abijith.userservice.repository.UserRepository;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +67,22 @@ public class UserService {
 
         user.setEnabled(true);
         userRepository.save(user);
+    }
+
+    public PagedUserResponse getUsers(Pageable pageable) {
+        Page<User> page = userRepository.findAllByEnabledTrue(pageable);
+
+        List<UserProfileResponse> users = page.getContent().stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return PagedUserResponse.builder()
+                .users(users)
+                .page(pageable.getPageNumber())
+                .size(pageable.getPageSize())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .build();
     }
 
     private UserProfileResponse mapToResponse(User user) {
