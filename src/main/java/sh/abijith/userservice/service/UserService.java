@@ -23,28 +23,52 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    /**
+     * Retrieves a user by ID if the account is enabled.
+     *
+     * @param id the user's ID
+     * @return user profile response
+     */
     public UserProfileResponse getUserById(String id) {
         return userRepository.findByIdAndEnabledTrue(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
     }
 
+    /**
+     * Retrieves a user by email if the account is enabled.
+     *
+     * @param email the user's email
+     * @return user profile response
+     */
     public UserProfileResponse getUserByEmail(String email) {
         return userRepository.findByEmailAndEnabledTrue(email)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
 
-    public String createUser(UserProfileRequest dto) {
-        if (userRepository.findByEmailAndEnabledTrue(dto.getEmail()).isPresent()) {
+    /**
+     * Creates a new user profile. Fails if email is already in use.
+     *
+     * @param request user profile request
+     * @return the new user's ID
+     */
+    public String createUser(UserProfileRequest request) {
+        if (userRepository.findByEmailAndEnabledTrue(request.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("Email already in use");
         }
 
-        User user = new User(null, dto.getEmail(), dto.getFirstName(), dto.getLastName(), true);
+        User user = new User(null, request.getEmail(), request.getFirstName(), request.getLastName(), true);
         user = userRepository.save(user);
         return user.getId();
     }
 
+    /**
+     * Updates a user's first and last name.
+     *
+     * @param id      the user's ID
+     * @param request the update request
+     */
     public void updateUser(String id, UpdateUserRequest request) {
         User user = userRepository.findByIdAndEnabledTrue(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
@@ -55,6 +79,11 @@ public class UserService {
         userRepository.save(user);
     }
 
+    /**
+     * Soft deletes (disables) a user account.
+     *
+     * @param id the user's ID
+     */
     public void deactivateUser(String id) {
         User user = userRepository.findByIdAndEnabledTrue(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
@@ -63,6 +92,11 @@ public class UserService {
         userRepository.save(user);
     }
 
+    /**
+     * Reactivates a disabled user account.
+     *
+     * @param id the user's ID
+     */
     public void reactivateUser(String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
@@ -71,6 +105,12 @@ public class UserService {
         userRepository.save(user);
     }
 
+    /**
+     * Retrieves a paginated list of all enabled users.
+     *
+     * @param pageable the pagination and sorting parameters
+     * @return paged user response
+     */
     public PagedUserResponse getUsers(Pageable pageable) {
         Page<User> page = userRepository.findAllByEnabledTrue(pageable);
 
@@ -87,6 +127,13 @@ public class UserService {
                 .build();
     }
 
+
+    /**
+     * Performs a case-insensitive regex search across first name, last name, and email.
+     *
+     * @param searchTerm the keyword to search
+     * @return list of matching user profiles
+     */
     public List<UserProfileResponse> searchUsers(String searchTerm) {
         String regex = "(?i).*" + searchTerm + ".*";
 
@@ -102,6 +149,12 @@ public class UserService {
         return uniqueMatches.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    /**
+     * Maps User entity to UserProfileResponse.
+     *
+     * @param user the user entity
+     * @return profile response
+     */
     private UserProfileResponse mapToResponse(User user) {
         return UserProfileResponse.builder()
                 .id(user.getId())
