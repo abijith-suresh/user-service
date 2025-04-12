@@ -22,5 +22,4 @@ public class User {
     private String lastName;
 
     private boolean enabled;
-    private boolean locked;
 }

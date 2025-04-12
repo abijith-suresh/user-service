@@ -17,29 +17,29 @@ public class UserService {
     private final UserRepository userRepository;
 
     public UserProfileResponse getUserById(String id) {
-        return userRepository.findById(id)
+        return userRepository.findByIdAndEnabledTrue(id)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
     }
 
     public UserProfileResponse getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmailAndEnabledTrue(email)
                 .map(this::mapToResponse)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
 
     public String createUser(UserProfileRequest dto) {
-        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+        if (userRepository.findByEmailAndEnabledTrue(dto.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("Email already in use");
         }
 
-        User user = new User(null, dto.getEmail(), dto.getFirstName(), dto.getLastName(), true, false);
+        User user = new User(null, dto.getEmail(), dto.getFirstName(), dto.getLastName(), true);
         user = userRepository.save(user);
         return user.getId();
     }
 
     public void updateUser(String id, UpdateUserRequest request) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findByIdAndEnabledTrue(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
         user.setFirstName(request.getFirstName());
@@ -48,6 +48,21 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public void deactivateUser(String id) {
+        User user = userRepository.findByIdAndEnabledTrue(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found or already deactivated"));
+
+        user.setEnabled(false);
+        userRepository.save(user);
+    }
+
+    public void reactivateUser(String id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        user.setEnabled(true);
+        userRepository.save(user);
+    }
 
     private UserProfileResponse mapToResponse(User user) {
         return UserProfileResponse.builder()
