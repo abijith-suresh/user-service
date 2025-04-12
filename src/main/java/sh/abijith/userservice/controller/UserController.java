@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import sh.abijith.userservice.dto.UpdateUserRequest;
 import sh.abijith.userservice.dto.UserProfileRequest;
 import sh.abijith.userservice.dto.UserProfileResponse;
 import sh.abijith.userservice.service.UserService;
@@ -26,6 +27,13 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> getUserByEmail(@PathVariable String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> updateUser(@PathVariable String id, @RequestBody @Valid UpdateUserRequest request) {
+        userService.updateUser(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
 
     @PostMapping
     public ResponseEntity<UserProfileRequest> createUser(@RequestBody @Valid UserProfileRequest request) {

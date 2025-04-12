@@ -2,6 +2,7 @@ package sh.abijith.userservice.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import sh.abijith.userservice.dto.UpdateUserRequest;
 import sh.abijith.userservice.dto.UserProfileRequest;
 import sh.abijith.userservice.dto.UserProfileResponse;
 import sh.abijith.userservice.exception.UserAlreadyExistsException;
@@ -36,6 +37,17 @@ public class UserService {
         user = userRepository.save(user);
         return user.getId();
     }
+
+    public void updateUser(String id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+
+        userRepository.save(user);
+    }
+
 
     private UserProfileResponse mapToResponse(User user) {
         return UserProfileResponse.builder()
