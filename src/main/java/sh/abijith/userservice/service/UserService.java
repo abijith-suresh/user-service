@@ -14,6 +14,8 @@ import sh.abijith.userservice.model.User;
 import sh.abijith.userservice.repository.UserRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +57,7 @@ public class UserService {
 
     public void deactivateUser(String id) {
         User user = userRepository.findByIdAndEnabledTrue(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found or already deactivated"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
         user.setEnabled(false);
         userRepository.save(user);
@@ -63,7 +65,7 @@ public class UserService {
 
     public void reactivateUser(String id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
         user.setEnabled(true);
         userRepository.save(user);
@@ -83,6 +85,21 @@ public class UserService {
                 .totalElements(page.getTotalElements())
                 .totalPages(page.getTotalPages())
                 .build();
+    }
+
+    public List<UserProfileResponse> searchUsers(String searchTerm) {
+        String regex = "(?i).*" + searchTerm + ".*";
+
+        List<User> uniqueMatches = Stream.of(
+                        userRepository.findByFirstNameRegex(regex),
+                        userRepository.findByLastNameRegex(regex),
+                        userRepository.findByEmailRegex(regex)
+                )
+                .flatMap(List::stream)
+                .distinct()
+                .toList();
+
+        return uniqueMatches.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     private UserProfileResponse mapToResponse(User user) {

@@ -14,6 +14,7 @@ import sh.abijith.userservice.dto.UserProfileResponse;
 import sh.abijith.userservice.service.UserService;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -58,6 +59,12 @@ public class UserController {
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).ascending());
         return ResponseEntity.ok(userService.getUsers(pageable));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<UserProfileResponse>> searchUsers(@RequestParam String query) {
+        List<UserProfileResponse> results = userService.searchUsers(query);
+        return ResponseEntity.ok(results);
     }
 
     @PostMapping
