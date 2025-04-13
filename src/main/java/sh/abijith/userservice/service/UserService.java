@@ -10,10 +10,14 @@ import sh.abijith.userservice.dto.UserProfileRequest;
 import sh.abijith.userservice.dto.UserProfileResponse;
 import sh.abijith.userservice.exception.UserAlreadyExistsException;
 import sh.abijith.userservice.exception.UserNotFoundException;
+import sh.abijith.userservice.mapper.UserMapper;
+import sh.abijith.userservice.model.Role;
 import sh.abijith.userservice.model.User;
 import sh.abijith.userservice.repository.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,6 +26,7 @@ import java.util.stream.Stream;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     /**
      * Retrieves a user by ID if the account is enabled.
@@ -31,7 +36,7 @@ public class UserService {
      */
     public UserProfileResponse getUserById(String id) {
         return userRepository.findByIdAndEnabledTrue(id)
-                .map(this::mapToResponse)
+                .map(userMapper::toUserProfileResponse)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
     }
 
@@ -43,7 +48,7 @@ public class UserService {
      */
     public UserProfileResponse getUserByEmail(String email) {
         return userRepository.findByEmailAndEnabledTrue(email)
-                .map(this::mapToResponse)
+                .map(userMapper::toUserProfileResponse)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
     }
 
@@ -58,13 +63,16 @@ public class UserService {
             throw new UserAlreadyExistsException("Email already in use");
         }
 
-        User user = new User(null, request.getEmail(), request.getFirstName(), request.getLastName(), true);
-        user = userRepository.save(user);
-        return user.getId();
+        User user = userMapper.toUser(request);
+        user.setEnabled(true);
+        user.setRoles(Set.of(Role.USER));
+        user.setCreatedAt(LocalDateTime.now());
+
+        return userRepository.save(user).getId();
     }
 
     /**
-     * Updates a user's first and last name.
+     * Updates a user's details
      *
      * @param id      the user's ID
      * @param request the update request
@@ -75,6 +83,9 @@ public class UserService {
 
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
+        user.setPhone(request.getPhone());
+        user.setCustomAttributes(request.getCustomAttributes());
+        user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
     }
@@ -113,9 +124,8 @@ public class UserService {
      */
     public PagedUserResponse getUsers(Pageable pageable) {
         Page<User> page = userRepository.findAllByEnabledTrue(pageable);
-
         List<UserProfileResponse> users = page.getContent().stream()
-                .map(this::mapToResponse)
+                .map(userMapper::toUserProfileResponse)
                 .toList();
 
         return PagedUserResponse.builder()
@@ -125,6 +135,7 @@ public class UserService {
                 .totalElements(page.getTotalElements())
                 .totalPages(page.getTotalPages())
                 .build();
+
     }
 
 
@@ -146,22 +157,7 @@ public class UserService {
                 .distinct()
                 .toList();
 
-        return uniqueMatches.stream().map(this::mapToResponse).collect(Collectors.toList());
+        return uniqueMatches.stream().map(userMapper::toUserProfileResponse).toList();
     }
 
-    /**
-     * Maps User entity to UserProfileResponse.
-     *
-     * @param user the user entity
-     * @return profile response
-     */
-    private UserProfileResponse mapToResponse(User user) {
-        return UserProfileResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .enabled(user.isEnabled())
-                .build();
-    }
 }

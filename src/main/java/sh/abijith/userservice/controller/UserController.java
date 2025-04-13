@@ -119,7 +119,7 @@ public class UserController {
      * @return 201 Created with location header
      */
     @PostMapping
-    public ResponseEntity<UserProfileRequest> createUser(@RequestBody @Valid UserProfileRequest request) {
+    public ResponseEntity<Void> createUser(@RequestBody @Valid UserProfileRequest request) {
         String userId = userService.createUser(request);
         URI location = URI.create("/users/" + userId);
         return ResponseEntity.created(location).build();
